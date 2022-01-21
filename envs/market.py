@@ -6,10 +6,10 @@ import pandas as pd
 from gym.spaces import Box
 
 from base_env import BaseEnv
-from envs.preprocessors import StockPreprocessor
+from preprocessors import StockPreprocessor
 
 
-class Market(BaseEnv):
+class Market():
 
     # NOTE: 
     # This environment is open-loop and assumes the quantities traded will not materially impact the price
@@ -25,8 +25,8 @@ class Market(BaseEnv):
         self.order_lag = env_config["order_lag"] # Lag in minutes for buy/sell orders to execute
 
         self.load_data()
-        self.max_steps = self.stocks[self.tickers[0]]["data"].shape[0] // self.dt # Number of minutes from market open to close
-        
+        self.max_steps = self.stocks[self.tickers[0]]["historical_data"].shape[0] // self.dt # Number of minutes from market open to close
+        self.norm_constants=np.array([])
 
     def load_data(self):
         ticker_paths = {
@@ -60,11 +60,11 @@ class Market(BaseEnv):
         initial_conditions = []
 
         for ticker,stock in self.stocks.items():
-            self.stocks[ticker]["live_data"] = stock["data"].groupby("date").get_group(self.date)[self.features].values
-            self.stocks[ticker]["current_price"] = self.stocks[ticker]["live_data"][0]            
-            self.stocks[ticker]["preprocessor"] = StockPreprocessor(self.stocks[ticker]["current_price"], self.dt)
-            initial_conditions.append(self.stocks[ticker]["current_price"])
-        
+            self.stocks[ticker]["live_data"] = stock["historical_data"].groupby("date").get_group(self.date)[self.features].values
+            self.stocks[ticker]["current_price"] = list(self.stocks[ticker]["live_data"][0])            
+            self.stocks[ticker]["preprocessor"] = StockPreprocessor(self.stocks[ticker].get("current_price"), self.dt)
+            initial_conditions += list(self.stocks[ticker]["preprocessor"].get_state())  #self.stocks[ticker].get("current_price")
+            self.norm_constants = np.append(self.norm_constants, self.stocks[ticker]["preprocessor"].norm_constants)
         return initial_conditions
 
 
@@ -74,9 +74,9 @@ class Market(BaseEnv):
         obs = []
 
         for ticker in self.stocks:
-            self.stocks[ticker]["current_price"] = self.stocks[ticker]["live_data"][self.current_step * self.dt]            
-            self.stocks[ticker]["preprocessor"].update(self.stocks[ticker]["current_price"])
-            obs.append(self.stocks[ticker]["preprocessor"].get_state())
+            self.stocks[ticker]["current_price"] = self.stocks[ticker].get("live_data")[self.current_step * self.dt]            
+            self.stocks[ticker]["preprocessor"].update(self.stocks[ticker].get("current_price"))
+            obs+= list(self.stocks[ticker]["preprocessor"].get_state())
         done = self.current_step==self.max_steps-1
         return obs, done
 

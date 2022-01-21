@@ -132,4 +132,5 @@ dmypy.json
 .vscode/
 
 # data
-.csv
+*.csv
+*.xlsx
