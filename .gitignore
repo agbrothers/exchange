@@ -134,3 +134,6 @@ dmypy.json
 # data
 *.csv
 *.xlsx
+*.zip
+*.yml
+data/*

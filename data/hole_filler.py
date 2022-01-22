@@ -20,26 +20,17 @@ Then
 import datetime
 import pandas as pd
 from glob import glob
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
-    ticker_paths = {
-        "AAPL": "AAPL_1min_sample.csv",
-        "MSFT": "MSFT_1min_sample.csv",
-    }
+    paths = glob("data/*.csv")
+    for path in tqdm(paths):
 
-    # paths = glob("data/*.csv")
-
-    for path in ticker_paths:
-
-
-        path = "data/MSFT_1min_sample.csv"
         data = pd.read_csv(path)
 
-        # # Separate dates and times
-        # data[["date","time"]] = data.date.str.split(" ", expand=True)
-        # data.to_csv(path, index=False)
-
+        # Separate dates and times
+        data[["date","time"]] = data.date.str.split(" ", expand=True)
 
         # Forward fill in missing minutes 
         data['time'] = pd.to_datetime(data['time'])
@@ -69,7 +60,6 @@ if __name__ == "__main__":
                 num_rows += 1
 
             i+=1
-
 
         data['time'] = data['time'].astype("string")
         data["time"] = data.time.str.split(" ", expand=True)[1]

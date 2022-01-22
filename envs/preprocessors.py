@@ -140,7 +140,3 @@ if __name__ == "__main__":
         new = test.get_state()
         # print(new)
         pp.pprint(new)
-
-
-    
-    print("okay")
