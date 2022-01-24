@@ -136,4 +136,4 @@ dmypy.json
 *.xlsx
 *.zip
 *.yml
-data/*
+*.txt
