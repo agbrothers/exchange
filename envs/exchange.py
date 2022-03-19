@@ -1,3 +1,8 @@
+from pathlib import Path
+import sys
+path_root = Path(__file__).parents[1]
+sys.path.append(str(path_root))
+
 import numpy as np
 import gym
 from gym.spaces import Box
@@ -57,8 +62,10 @@ class Exchange(gym.Env):
 
     def close(self):
         pass
+
     def render(self):
         pass
+
     def seed(self):
         super().seed()
 
@@ -75,6 +82,7 @@ if __name__ == "__main__":
             "AAPL",
             "MSFT",
         ],
+        "database_credentials_path": "database/credentials.json"
     }
     env = Exchange(env_config)
     env.step(np.array([0.5,1]))

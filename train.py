@@ -11,8 +11,9 @@ env_config = {
     "order_lag":0,
     "starting_balance":100_000,
     "tickers":[
-        "AAPL",
+        "GOOG",
         "MSFT",
+        "AAPL",
     ],
 }
 
