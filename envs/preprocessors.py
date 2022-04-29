@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 
 
 class StockPreprocessor: 
@@ -7,10 +8,10 @@ class StockPreprocessor:
 
     def __init__(self, ics, dt=1):
         self.ticker = ""
-        self.obs_dict = {}
+        self.obs_dict = OrderedDict()
         self.timestep = -1 
         self.dt = dt    
-        self.norm_constants=None
+        self._norm_constants=None
 
         # Histories
         self.price_history = []
@@ -27,7 +28,6 @@ class StockPreprocessor:
         self.obs_dict["day_volume_high"] = 0
         # Intraday low
         self.obs_dict["day_volume_low"] = np.inf
-
 
         self.update(ics)
 
@@ -104,12 +104,15 @@ class StockPreprocessor:
         self.obs_dict["day_volume_30m_avg_percentage"] = np.mean(self.volume_percentage_history[-30::self.dt])
 
 
-        self.obs_values = np.fromiter(self.obs_dict.values(), dtype=float)
+        self._obs_values = np.fromiter(self.obs_dict.values(), dtype=float)
         if self.timestep==0:
-            self.norm_constants = np.abs([val if val > 1 else 1 for val in self.obs_values])
+            self._norm_constants = np.abs([val if val > 1 else 1 for val in self._obs_values])
 
     def get_state(self):
-        return self.obs_values
+        return self._obs_values
+
+    def get_norm_state(self):
+        return self._obs_values / self._norm_constants
 
 
 

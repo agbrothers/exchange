@@ -175,37 +175,21 @@ class DataBase:
             
 
 
-
-
 if __name__=="__main__":
 
-    database = DB(
+    database = DataBase(
         user="root",
         password="sonny_crocket_84",
         database="exchange",
     )
 
-
-    tickers_query = f"""
-        create table if not exists tickers(
-            ticker_id int auto_increment not null,
-            ticker varchar(5) not null,
-            first_date date,
-            last_date date,
-
-            primary key (ticker_id),
-            unique (ticker)
-        );
-        """
-
+    # Upload source csvs to database
     paths = glob.glob("./data/source/*.csv")
     for i,path in enumerate(paths):
         print(f"{i}/{len(paths)} {path}")
         database.upload_csv(path)
 
-    df = database.read("SELECT table_name FROM information_schema.tables;")
-
-
+    # Update ticker lookup table
     for path in paths:
         file = os.path.basename(path)
         table = file.split("_")[0]
@@ -218,12 +202,19 @@ if __name__=="__main__":
         values = [table, mn, mx]
         database.insert("tickers", cols, values)        
 
-        # database.update("tickers", cols, values)        
-
-
     database.read("SELECT * FROM tickers;")
 
 
+# tickers_query = f"""
+#     create table if not exists tickers(
+#         ticker_id int auto_increment not null,
+#         ticker varchar(5) not null,
+#         first_date date,
+#         last_date date,
+#         primary key (ticker_id),
+#         unique (ticker)
+#     );
+#     """
 
 # database.read("SELECT * FROM tickers")
 
