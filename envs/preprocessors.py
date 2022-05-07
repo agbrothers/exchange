@@ -78,7 +78,7 @@ class StockPreprocessor:
         # Intraday price 30m moving avg
         self.obs_dict["day_price_30m_avg_percentage"] = np.mean(self.price_percentage_history[-30::self.dt])
 
-        self.volume_history.append(self.obs_dict["current_volume"])
+        self.volume_history.append(max(self.obs_dict["current_volume"],1))
         self.volume_percentage_history.append(self.obs_dict["current_volume"] / self.volume_history[self.timestep-1] - 1)
 
         # Intraday volume open
@@ -93,11 +93,11 @@ class StockPreprocessor:
         self.obs_dict["day_volume_30m_avg"] = np.mean(self.volume_history[-30::self.dt])
 
         # Intraday price percentage change
-        self.obs_dict["day_volume_percentage_change"] = self.obs_dict["current_volume"] / self.obs_dict["day_volume_open"] - 1
+        self.obs_dict["day_volume_percentage_change"] = self.obs_dict["current_volume"] / max(self.obs_dict["day_volume_open"], 1) - 1
         # Intraday price percentage high
-        self.obs_dict["day_volume_percentage_high"] = self.obs_dict["current_volume"] / self.obs_dict["day_volume_high"] - 1
+        self.obs_dict["day_volume_percentage_high"] = self.obs_dict["current_volume"] / max(self.obs_dict["day_volume_high"], 1) - 1
         # Intraday price percentage low
-        self.obs_dict["day_volume_percentage_low"] = self.obs_dict["current_volume"] / self.obs_dict["day_volume_low"] - 1
+        self.obs_dict["day_volume_percentage_low"] = self.obs_dict["current_volume"] / max(self.obs_dict["day_volume_low"], 1) - 1
         # Intraday price avg
         self.obs_dict["day_volume_median_percentage"] = np.median(self.volume_percentage_history[::self.dt])
         # Intraday price 30m moving avg
@@ -105,14 +105,18 @@ class StockPreprocessor:
 
 
         self._obs_values = np.fromiter(self.obs_dict.values(), dtype=float)
+        assert not any(np.isnan(self._obs_values))
         if self.timestep==0:
             self._norm_constants = np.abs([val if val > 1 else 1 for val in self._obs_values])
 
+        
     def get_state(self):
         return self._obs_values
 
     def get_norm_state(self):
-        return self._obs_values / self._norm_constants
+        state = self._obs_values / self._norm_constants
+        assert not any(np.isnan(state))
+        return state
 
 
 

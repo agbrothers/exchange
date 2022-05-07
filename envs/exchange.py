@@ -4,13 +4,14 @@ path_root = Path(__file__).parents[1]
 sys.path.append(str(path_root))
 
 import gym
+import torch
 import numpy as np
 from collections import OrderedDict
-from gym.spaces import Box, Discrete
+# from gym.spaces import Box, MultiDiscrete
 from numpy.core.fromnumeric import clip
 
 from envs.market import Market
-
+from envs.spaces import MutableBox, MutableMultiDiscrete
 
 class Exchange(gym.Env):
 
@@ -18,8 +19,6 @@ class Exchange(gym.Env):
     # This environment is open-loop and assumes the quantities traded will not materially impact prices
 
     def __init__(self, env_config:dict):
-
-        self.tickers = env_config["tickers"]
         self.starting_balance = self.portfolio_value = self.cash_balance = env_config["starting_balance"]
 
         self.market = Market(env_config)        # ~Environment 
@@ -29,8 +28,15 @@ class Exchange(gym.Env):
         self.buy_sell_percentage = 0.10 # tune this to see how it impacts learning
         self.max_daily_increase_multiple = 10 # For scaling, don't expect more than 10x portfolio value increase in a day
         self.max_steps = self.market.max_steps
+        self.action_space = MutableMultiDiscrete([2, 2, 10] * len(self.market.tickers))
+        self.observation_space =  MutableBox(-10, 10, shape=(len(self.market.tickers)*29 + 2,))
         self.debug = env_config["debug"]
-        
+
+
+    def update_spaces(self):
+        num_stocks = len(self.selected_tickers)
+        self.action_space.update([2, 2, 10] * num_stocks)
+        self.observation_space.update(shape=(num_stocks*29 + 2,))
 
     def reset(self, eval=False):
         self.current_step = 0
@@ -46,8 +52,7 @@ class Exchange(gym.Env):
         rel_cash_balance = self.cash_balance / self.starting_balance / self.max_daily_increase_multiple 
         ics = np.append([rel_portfolio_value, rel_cash_balance], flattened_ics)
 
-        self._action_space = Discrete(len(self.selected_tickers)*3) # sell -1 > 0, hold == 0, buy 0 < 1        
-        self._observation_space = Box(-10, 10, shape=ics.shape)  # Discrete(ics.shape[0])     # np.array(2 + 3*self.num_stocks + 28*self.num_stocks)
+        self.update_spaces()
         if self.debug: print(self.current_step, int(self.portfolio_value))
         return ics
 
@@ -58,6 +63,8 @@ class Exchange(gym.Env):
         self.current_step += 1
         reward = 0
         prices = self.market.state
+        if not isinstance(action, np.ndarray) and not isinstance(action, torch.Tensor):
+            action = np.array(action)
         actions_per_stock = action.reshape((-1, 3))
 
         # TAKE ACTIONS
@@ -122,17 +129,15 @@ class Exchange(gym.Env):
         return portfolio_obs
 
 
+    # @property
+    # def observation_space(self):
+    #     # [ 2 + (num_stocks * state_size=29) ]
+    #     return self._observation_space
 
-
-    @property
-    def observation_space(self):
-        # [ 2 + (num_stocks * state_size=29) ]
-        return self._observation_space
-
-    @property
-    def action_space(self):
-        # [ num_stocks, action_size=3 ]
-        return self._action_space
+    # @property
+    # def action_space(self):
+    #     # [ num_stocks, action_size=3 ]
+    #     return self._action_space
 
     def close(self):
         pass
